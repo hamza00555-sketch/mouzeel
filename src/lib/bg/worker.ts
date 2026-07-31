@@ -17,7 +17,10 @@ const ctx = self as unknown as DedicatedWorkerGlobalScope;
 // Self-hosted binaries (see scripts/copy-ort-assets.mjs). Single-threaded: we
 // don't set COOP/COEP, so SharedArrayBuffer is unavailable — irrelevant here
 // because inference runs on WebGPU.
-ort.env.wasm.wasmPaths = '/ort/';
+// Version-stamped by next.config from the installed onnxruntime-web, so the
+// `immutable` cache header on /ort/* is truthful and a bad deploy can't leave a
+// year-long 404 cached in visitors' browsers.
+ort.env.wasm.wasmPaths = process.env.NEXT_PUBLIC_ORT_PATH ?? '/ort/';
 ort.env.wasm.numThreads = 1;
 ort.env.wasm.proxy = false;
 
