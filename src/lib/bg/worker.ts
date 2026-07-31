@@ -21,8 +21,6 @@ ort.env.wasm.wasmPaths = '/ort/';
 ort.env.wasm.numThreads = 1;
 ort.env.wasm.proxy = false;
 
-/** Copied in by scripts/copy-ort-assets.mjs; both execution providers load it. */
-const WASM_BINARY = 'ort-wasm-simd-threaded.jsep.wasm';
 
 function post(message: WorkerResponse, transfer: Transferable[] = []) {
   ctx.postMessage(message, transfer);
@@ -146,15 +144,20 @@ async function createSession(bytes: ArrayBuffer) {
     }
   }
 
-  // Both providers need the WASM binary from /ort/. Those files are generated
-  // from node_modules and git-ignored, so a checkout started without the copy
-  // step serves 404s and every provider fails identically — worth naming
-  // outright instead of leaving a runtime error to be decoded.
-  const hint = (await fetch(`${ort.env.wasm.wasmPaths}${WASM_BINARY}`, { method: 'HEAD' })
-    .then((response) => (response.ok ? '' : `; ${WASM_BINARY} returned ${response.status}`))
-    .catch(() => `; ${WASM_BINARY} is unreachable`)) as string;
+  // ORT names the exact URL it could not load, so don't second-guess it with a
+  // hardcoded filename — which variant it wants is its own internal choice.
+  // Just say what to do about it when the failure is clearly a missing asset.
+  const combined = failures.join(' | ');
+  const missingAsset = combined.includes(ort.env.wasm.wasmPaths as string);
 
-  throw Object.assign(new Error(failures.join(' | ') + hint), { code: 'engineFailed' as const });
+  throw Object.assign(
+    new Error(
+      missingAsset
+        ? `${combined} — run "npm install" to regenerate public/ort, then redeploy`
+        : combined,
+    ),
+    { code: 'engineFailed' as const },
+  );
 }
 
 function getSession() {
