@@ -17,7 +17,7 @@ type State =
   | { status: 'idle' }
   | { status: 'working'; progress: Progress }
   | { status: 'ready'; cutout: Cutout }
-  | { status: 'error'; code: ErrorCode };
+  | { status: 'error'; code: ErrorCode; detail?: string };
 
 export function Studio({ dict }: { dict: Dictionary }) {
   const [state, setState] = useState<State>({ status: 'idle' });
@@ -44,7 +44,16 @@ export function Studio({ dict }: { dict: Dictionary }) {
       });
       setState({ status: 'ready', cutout });
     } catch (error) {
-      setState({ status: 'error', code: error instanceof MuzeelError ? error.code : 'unknown' });
+      setState({
+        status: 'error',
+        code: error instanceof MuzeelError ? error.code : 'unknown',
+        detail:
+          error instanceof MuzeelError
+            ? error.detail
+            : error instanceof Error
+              ? error.message
+              : undefined,
+      });
     }
   }, []);
 
@@ -215,6 +224,23 @@ export function Studio({ dict }: { dict: Dictionary }) {
     return (
       <div role="alert" className="mx-auto max-w-lg py-6 text-center">
         <p className="text-[17px] leading-relaxed text-ink">{dict.errors[state.code]}</p>
+
+        {/* The raw reason, tucked away. Without it a failed engine is a dead end
+            the user can neither diagnose nor report. */}
+        {state.detail ? (
+          <details className="mt-4 text-start">
+            <summary className="cursor-pointer text-center text-[13px] text-ink-soft transition-colors hover:text-ink">
+              {dict.errors.details}
+            </summary>
+            <p
+              dir="ltr"
+              className="mt-3 max-h-40 overflow-auto rounded-xl bg-fog p-3 font-mono text-[11px] leading-relaxed break-words text-ink-soft"
+            >
+              {state.detail}
+            </p>
+          </details>
+        ) : null}
+
         <div className="mt-7 flex justify-center gap-3">
           {lastFile ? (
             <button

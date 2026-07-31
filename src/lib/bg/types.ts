@@ -32,6 +32,11 @@ export class MuzeelError extends Error {
   constructor(
     readonly code: ErrorCode,
     cause?: unknown,
+    /**
+     * Raw underlying reason, shown behind a disclosure in the UI. Without it a
+     * failed engine is undiagnosable for the user and unreportable to us.
+     */
+    readonly detail?: string,
   ) {
     super(code, { cause });
     this.name = 'MuzeelError';
@@ -55,5 +60,7 @@ export type WorkerRequest =
 export type WorkerResponse =
   | { type: 'progress'; phase: EnginePhase; ratio: number | null }
   | { type: 'ready' }
+  /** Which execution provider actually built, so slow CPU runs can be flagged. */
+  | { type: 'engine'; provider: 'webgpu' | 'wasm' }
   | { type: 'result'; id: number; mask: ImageBitmap }
   | { type: 'error'; id?: number; code: ErrorCode; message: string };

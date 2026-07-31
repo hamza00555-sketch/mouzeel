@@ -21,6 +21,9 @@ ort.env.wasm.wasmPaths = '/ort/';
 ort.env.wasm.numThreads = 1;
 ort.env.wasm.proxy = false;
 
+/** Copied in by scripts/copy-ort-assets.mjs; both execution providers load it. */
+const WASM_BINARY = 'ort-wasm-simd-threaded.jsep.wasm';
+
 function post(message: WorkerResponse, transfer: Transferable[] = []) {
   ctx.postMessage(message, transfer);
 }
@@ -32,12 +35,33 @@ function fail(code: ErrorCode, error: unknown, id?: number) {
 /** Give up if the download makes no progress for this long. */
 const STALL_TIMEOUT_MS = 30_000;
 
+/**
+ * A truncated download or a captive-portal HTML page will cache just as happily
+ * as the real weights, and then every retry fails identically at session
+ * creation. ONNX is protobuf: field 1 (ir_version), wire type 0 — so byte 0 is
+ * always 0x08. Combined with a size floor that is enough to reject the junk.
+ */
+function looksLikeOnnx(bytes: Uint8Array) {
+  return bytes.byteLength > MODEL_BYTES * 0.9 && bytes[0] === 0x08;
+}
+
+async function evictCachedModel() {
+  await caches
+    .open(MODEL_CACHE)
+    .then((cache) => cache.delete(MODEL_URL))
+    .catch(() => {});
+}
+
 /** Streams the model, reporting progress, and caches it for every later visit. */
 async function loadModelBytes(): Promise<ArrayBuffer> {
   const cache = await caches.open(MODEL_CACHE).catch(() => null);
 
   const cached = await cache?.match(MODEL_URL);
-  if (cached) return cached.arrayBuffer();
+  if (cached) {
+    const bytes = new Uint8Array(await cached.arrayBuffer());
+    if (looksLikeOnnx(bytes)) return bytes.buffer as ArrayBuffer;
+    await evictCachedModel(); // poisoned entry — fall through and refetch
+  }
 
   // Without this a blocked or half-open connection leaves the user staring at a
   // progress bar forever, with no error and no chance to fall back.
@@ -76,6 +100,12 @@ async function loadModelBytes(): Promise<ArrayBuffer> {
       offset += chunk.byteLength;
     }
 
+    if (!looksLikeOnnx(bytes)) {
+      throw new Error(
+        `downloaded ${received} bytes but they are not an ONNX model — the connection may be intercepted`,
+      );
+    }
+
     // Cache failures (quota, private mode) only cost us the next download.
     await cache
       ?.put(
@@ -92,17 +122,60 @@ async function loadModelBytes(): Promise<ArrayBuffer> {
 
 let sessionPromise: Promise<ort.InferenceSession> | null = null;
 
+/**
+ * An adapter existing does not mean a session will build on it: driver
+ * blocklists, missing shader features and out-of-memory all surface only at
+ * `create()`. Falling back to the CPU kernel is slow but finishes, which beats
+ * a dead end — and if both fail we keep the real reason from each attempt so
+ * the UI can show something more useful than "it didn't work".
+ */
+async function createSession(bytes: ArrayBuffer) {
+  const failures: string[] = [];
+
+  for (const provider of ['webgpu', 'wasm'] as const) {
+    try {
+      const session = await ort.InferenceSession.create(bytes, {
+        executionProviders: [provider],
+        graphOptimizationLevel: 'all',
+      });
+
+      post({ type: 'engine', provider });
+      return session;
+    } catch (error) {
+      failures.push(`${provider}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  // Both providers need the WASM binary from /ort/. Those files are generated
+  // from node_modules and git-ignored, so a checkout started without the copy
+  // step serves 404s and every provider fails identically — worth naming
+  // outright instead of leaving a runtime error to be decoded.
+  const hint = (await fetch(`${ort.env.wasm.wasmPaths}${WASM_BINARY}`, { method: 'HEAD' })
+    .then((response) => (response.ok ? '' : `; ${WASM_BINARY} returned ${response.status}`))
+    .catch(() => `; ${WASM_BINARY} is unreachable`)) as string;
+
+  throw Object.assign(new Error(failures.join(' | ') + hint), { code: 'engineFailed' as const });
+}
+
 function getSession() {
   sessionPromise ??= (async () => {
     const bytes = await loadModelBytes().catch((error) => {
-      throw Object.assign(new Error('networkModel'), { code: 'networkModel' as const, cause: error });
+      throw Object.assign(new Error(error instanceof Error ? error.message : String(error)), {
+        code: 'networkModel' as const,
+      });
     });
 
     post({ type: 'progress', phase: 'loading', ratio: null });
-    return ort.InferenceSession.create(bytes, {
-      executionProviders: ['webgpu'],
-      graphOptimizationLevel: 'all',
-    });
+
+    try {
+      return await createSession(bytes);
+    } catch (error) {
+      // The bytes passed the header check yet still would not parse or build:
+      // drop them so a retry starts from a fresh download rather than replaying
+      // the same failure forever.
+      await evictCachedModel();
+      throw error;
+    }
   })().catch((error) => {
     sessionPromise = null; // let the user retry
     throw error;

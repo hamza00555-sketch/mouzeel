@@ -51,13 +51,20 @@ class LocalEngine {
   #nextId = 1;
 
   onProgress: ((progress: Progress) => void) | null = null;
+  /** Which EP the session actually built on; null until one does. */
+  provider: 'webgpu' | 'wasm' | null = null;
 
   #ensureWorker() {
     if (this.#worker) return this.#worker;
 
     const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => this.#handle(event.data);
-    worker.onerror = () => this.#rejectAll(new MuzeelError('engineFailed'));
+    // Fires when the worker module itself fails to load or throws at top level;
+    // `message` is the only clue the browser gives us, so keep it.
+    worker.onerror = (event) =>
+      this.#rejectAll(
+        new MuzeelError('engineFailed', event, event.message || 'worker failed to start'),
+      );
 
     this.#worker = worker;
     return worker;
@@ -73,6 +80,10 @@ class LocalEngine {
         this.#warmup.splice(0).forEach((waiter) => waiter.resolve());
         break;
 
+      case 'engine':
+        this.provider = message.provider;
+        break;
+
       case 'result': {
         this.#pending.get(message.id)?.resolve(message.mask);
         this.#pending.delete(message.id);
@@ -80,7 +91,7 @@ class LocalEngine {
       }
 
       case 'error': {
-        const error = new MuzeelError(message.code, message.message);
+        const error = new MuzeelError(message.code, undefined, message.message);
         if (message.id === undefined) {
           this.#rejectAll(error);
         } else {

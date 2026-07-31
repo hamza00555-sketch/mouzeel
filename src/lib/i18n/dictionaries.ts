@@ -137,13 +137,14 @@ const ar = {
     corrupt: 'تعذّرت قراءة الصورة — قد يكون الملف تالفاً.',
     noEngine:
       'متصفحك لا يدعم WebGPU، والمعالجة على الخادم غير متاحة حالياً. جرّب Chrome أو Edge أو Safari بإصدار حديث.',
-    engineFailed: 'فشل تشغيل المحرك على جهازك.',
+    engineFailed: 'تعذّر تشغيل المحرك على جهازك. افتح التفاصيل التقنية أدناه لمعرفة السبب.',
     networkModel: 'تعذّر تنزيل المحرك. تحقّق من اتصالك وأعد المحاولة.',
     serverFailed: 'تعذّرت المعالجة على الخادم.',
     rateLimited: 'تجاوزت الحد المسموح. حاول مرة أخرى بعد قليل، أو استخدم المعالجة على جهازك.',
     unknown: 'حدث خطأ غير متوقع.',
     retry: 'إعادة المحاولة',
     dismiss: 'إغلاق',
+    details: 'التفاصيل التقنية',
   },
   footer: {
     builtWith: 'مبني على نموذج BiRefNet مفتوح المصدر برخصة MIT.',
@@ -278,13 +279,14 @@ const en: Dictionary = {
     corrupt: 'Could not read the image — the file may be corrupt.',
     noEngine:
       'Your browser does not support WebGPU and server processing is unavailable. Try a recent Chrome, Edge or Safari.',
-    engineFailed: 'The engine failed to start on your device.',
+    engineFailed: 'The engine could not start on your device. Open the technical details below for the reason.',
     networkModel: 'Could not download the engine. Check your connection and try again.',
     serverFailed: 'Server processing failed.',
     rateLimited: 'You have hit the limit. Try again shortly, or switch to on-device processing.',
     unknown: 'Something went wrong.',
     retry: 'Try again',
     dismiss: 'Dismiss',
+    details: 'Technical details',
   },
   footer: {
     builtWith: 'Built on the open-source BiRefNet model, MIT licensed.',
