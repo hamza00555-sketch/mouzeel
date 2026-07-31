@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
-import { IBM_Plex_Sans_Arabic } from 'next/font/google';
+import { Noto_Sans_Arabic } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { ServiceWorker } from '@/components/ServiceWorker';
 import { dir, getDictionary, isLocale, locales } from '@/lib/i18n/dictionaries';
 
-const arabic = IBM_Plex_Sans_Arabic({
+// Apple sets Arabic in SF Arabic, which isn't licensable for the web. Noto Sans
+// Arabic is the closest neutral stand-in — same humanist Naskh skeleton, no
+// house personality of its own — and it carries the heavy display weights the
+// hero needs. Latin falls through to the real SF on Apple hardware.
+const arabic = Noto_Sans_Arabic({
   variable: '--font-arabic',
   subsets: ['arabic', 'latin'],
   weight: ['400', '500', '600', '700'],

@@ -241,46 +241,54 @@ export function Editor({
         />
       </div>
 
-      <aside className="flex min-h-0 flex-col rounded-xl2 border border-ink-800 bg-ink-900">
-        <div className="flex items-center justify-between gap-2 border-b border-ink-800 p-3">
-          <div className="flex gap-1">
+      {/* Inspector. Surfaces separate by tone, not by outline — the only rule is
+          the one under the toolbar, which has a real job. */}
+      <aside className="flex min-h-0 flex-col rounded-[1.25rem] bg-shell">
+        <div className="flex items-center justify-between gap-2 p-2.5">
+          <div className="flex gap-0.5">
             <IconButton label={dict.editor.undo} disabled={history.undo === 0} onClick={undo}>
-              <UndoIcon className="size-4" />
+              <UndoIcon className="size-[18px]" />
             </IconButton>
             <IconButton label={dict.editor.redo} disabled={history.redo === 0} onClick={redo}>
-              <RedoIcon className="size-4" />
+              <RedoIcon className="size-[18px]" />
             </IconButton>
           </div>
 
           <button
             type="button"
             onClick={onReset}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink-300 transition hover:bg-ink-800 hover:text-ink-50"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium text-azure transition hover:bg-shell-high"
           >
             <UploadIcon className="size-3.5" />
             {dict.editor.newImage}
           </button>
         </div>
 
-        <nav className="grid grid-cols-4 gap-1 border-b border-ink-800 p-2" role="tablist">
-          {tabs.map((entry) => (
-            <button
-              key={entry.id}
-              role="tab"
-              aria-selected={tab === entry.id}
-              onClick={() => setTab(entry.id)}
-              className={`rounded-lg px-1 py-2 text-xs font-medium transition ${
-                tab === entry.id
-                  ? 'bg-ink-800 text-ink-50'
-                  : 'text-ink-400 hover:bg-ink-850 hover:text-ink-200'
-              }`}
-            >
-              {entry.label}
-            </button>
-          ))}
-        </nav>
+        {/* Segmented control, Apple's own: one recessed track, one raised pill. */}
+        <div className="px-2.5 pb-3">
+          <nav
+            className="grid grid-cols-4 gap-0.5 rounded-[0.625rem] bg-void/40 p-0.5"
+            role="tablist"
+          >
+            {tabs.map((entry) => (
+              <button
+                key={entry.id}
+                role="tab"
+                aria-selected={tab === entry.id}
+                onClick={() => setTab(entry.id)}
+                className={`rounded-lg px-1 py-1.5 text-[13px] font-medium transition duration-200 ease-hardware ${
+                  tab === entry.id
+                    ? 'bg-shell-high text-chalk shadow-sm'
+                    : 'text-chalk-soft hover:text-chalk'
+                }`}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
           {tab === 'background' ? (
             <BackgroundPanel
               dict={dict}
@@ -302,12 +310,12 @@ export function Editor({
           ) : null}
         </div>
 
-        <div className="border-t border-ink-800 p-3">
+        <div className="p-3">
           <button
             type="button"
             onClick={download}
             disabled={busy}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-azure py-3 text-[15px] font-medium text-white transition duration-200 ease-hardware hover:bg-azure-lift active:scale-[0.98] disabled:opacity-50"
           >
             <DownloadIcon className="size-4" />
             {busy ? dict.editor.downloading : dict.editor.download}
@@ -336,7 +344,7 @@ function IconButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex size-8 items-center justify-center rounded-lg text-ink-300 transition hover:bg-ink-800 hover:text-ink-50 disabled:pointer-events-none disabled:opacity-30"
+      className="flex size-8 items-center justify-center rounded-full text-chalk-soft transition hover:bg-shell-high hover:text-chalk disabled:pointer-events-none disabled:opacity-25"
     >
       {children}
     </button>

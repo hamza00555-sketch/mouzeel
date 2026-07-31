@@ -25,10 +25,10 @@ export function Slider({
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-sm text-ink-200">
+        <label htmlFor={id} className="text-sm text-chalk">
           {label}
         </label>
-        <span className="font-mono text-xs tabular-nums text-ink-400">
+        <span className="font-mono text-xs tabular-nums text-chalk-soft">
           {format ? format(value) : value}
         </span>
       </div>
@@ -61,7 +61,7 @@ export function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="grid gap-1 rounded-xl bg-ink-850 p-1"
+      className="grid gap-1 rounded-xl bg-shell p-1"
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
     >
       {options.map((option) => {
@@ -76,8 +76,8 @@ export function Segmented<T extends string>({
             onClick={() => onChange(option.value)}
             className={`rounded-lg px-2 py-2 text-sm font-medium transition ${
               active
-                ? 'bg-brand-500 text-white shadow-sm'
-                : 'text-ink-300 hover:bg-ink-800 hover:text-ink-50'
+                ? 'bg-azure text-white shadow-sm'
+                : 'text-chalk-soft hover:bg-shell-high hover:text-chalk'
             }`}
           >
             {option.label}
@@ -104,10 +104,10 @@ export function Toggle({
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
-        <label htmlFor={id} className="text-sm text-ink-200">
+        <label htmlFor={id} className="text-sm text-chalk">
           {label}
         </label>
-        {hint ? <p className="mt-0.5 text-xs leading-relaxed text-ink-400">{hint}</p> : null}
+        {hint ? <p className="mt-0.5 text-xs leading-relaxed text-chalk-soft">{hint}</p> : null}
       </div>
       <button
         id={id}
@@ -116,7 +116,7 @@ export function Toggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition ${
-          checked ? 'bg-brand-500' : 'bg-ink-700'
+          checked ? 'bg-azure' : 'bg-hairline'
         }`}
       >
         <span
@@ -132,7 +132,7 @@ export function Toggle({
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-2">
-      <p className="text-sm text-ink-200">{label}</p>
+      <p className="text-sm text-chalk">{label}</p>
       {children}
     </div>
   );
@@ -141,7 +141,8 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 export function PanelSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-4">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-400">{title}</h3>
+      {/* Sentence case, not tracked small-caps: an inspector label, not a kicker. */}
+      <h3 className="text-[13px] font-semibold text-chalk">{title}</h3>
       {children}
     </section>
   );

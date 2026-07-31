@@ -17,21 +17,34 @@ const ar = {
     title: 'مُزيل — إزالة خلفية الصور بالذكاء الاصطناعي',
     description:
       'أزل خلفية أي صورة في ثوانٍ، بدقة كاملة وبدون علامة مائية. المعالجة تتم داخل متصفحك، وصورك لا تغادر جهازك.',
-    ogAlt: 'مُزيل — إزالة خلفية الصور',
   },
   nav: {
     brand: 'مُزيل',
-    tagline: 'إزالة الخلفيات',
     switchLang: 'English',
-    github: 'المصدر',
   },
   hero: {
-    badge: 'يعمل داخل متصفحك',
-    title: 'أزل خلفية صورتك',
-    titleAccent: 'في ثانية واحدة',
-    subtitle:
-      'ارفع صورة واحصل على خلفية شفافة بدقة كاملة — بدون علامة مائية، وبدون تسجيل دخول.',
-    privacyNote: 'صورك تُعالَج على جهازك ولا تُرفَع إلى أي خادم.',
+    title: 'الخلفية',
+    titleAccent: 'اسحب لتزيلها',
+    subtitle: 'دقة كاملة · بلا علامة مائية · بلا تسجيل دخول',
+    revealHint: 'اسحب لكشف الصورة قبل وبعد إزالة الخلفية',
+    revealCaption: 'صورة حقيقية، قُصّت بنفس المحرك الذي يعمل داخل متصفحك.',
+  },
+  samples: {
+    title: 'أو جرّب على واحدة من هذي:',
+    portrait: 'شعر كثيف',
+    product: 'صورة منتج',
+    fur: 'فرو ناعم',
+  },
+  showcase: {
+    privacyTitle: 'لا تغادر جهازك',
+    privacyBody:
+      'المعالجة تتم داخل المتصفح نفسه. لا رفع، لا تخزين، ولا خادم يرى صورتك — حتى لو قطعت الإنترنت.',
+    precisionTitle: 'خصلة خصلة',
+    precisionBody:
+      'نموذج BiRefNet مفتوح المصدر يفصل أدق التفاصيل: الشعر المتطاير، الفرو، وحواف الزجاج.',
+    controlTitle: 'وإن أخطأ، صحّحه بيدك',
+    controlBody:
+      'فرشاة استرجاع ومسح، وضبط للحواف، وخلفية بأي لون أو صورة — كلها بالدقة الأصلية.',
   },
   dropzone: {
     title: 'اسحب صورتك هنا',
@@ -39,29 +52,6 @@ const ar = {
     paste: 'يمكنك أيضاً اللصق مباشرة بـ Ctrl+V',
     formats: 'PNG أو JPG أو WEBP — حتى ٣٠ ميجابايت',
     button: 'اختر صورة',
-    tryExample: 'أو جرّب على مثال جاهز:',
-    exampleAlt: 'صورة تجريبية',
-  },
-  features: {
-    title: 'لماذا مُزيل؟',
-    items: [
-      {
-        title: 'خصوصية كاملة',
-        body: 'المعالجة تتم داخل متصفحك بالكامل. صورتك لا تغادر جهازك ولا تُخزَّن في أي مكان.',
-      },
-      {
-        title: 'دقة أصلية',
-        body: 'تحصل على الصورة بنفس أبعادها الأصلية — بدون تصغير وبدون علامة مائية.',
-      },
-      {
-        title: 'تصحيح يدوي',
-        body: 'فرشاة لاسترجاع أو مسح أي جزء، لأن أفضل نموذج يخطئ أحياناً.',
-      },
-      {
-        title: 'يعمل بدون إنترنت',
-        body: 'بعد أول استخدام، يبقى المحرّك محفوظاً في متصفحك ويعمل حتى بدون اتصال.',
-      },
-    ],
   },
   engine: {
     preparing: 'جارٍ تحضير المحرك',
@@ -80,12 +70,9 @@ const ar = {
     newImage: 'صورة جديدة',
     download: 'تنزيل',
     downloading: 'جارٍ التحضير…',
-    reset: 'إعادة تعيين',
     undo: 'تراجع',
     redo: 'إعادة',
     compare: 'مقارنة',
-    original: 'الأصلية',
-    result: 'النتيجة',
     zoomIn: 'تكبير',
     zoomOut: 'تصغير',
     fit: 'ملء الشاشة',
@@ -143,15 +130,6 @@ const ar = {
       estimated: 'الحجم التقريبي',
     },
   },
-  quality: {
-    title: 'جودة المعالجة',
-    auto: 'تلقائي',
-    local: 'على جهازي',
-    server: 'جودة عالية (خادم)',
-    localHint: 'أسرع وأكثر خصوصية — لا شيء يُرفَع.',
-    serverHint: 'نموذج أكبر ودقة أعلى للحواف — تُرفَع الصورة مؤقتاً للمعالجة.',
-    serverUnavailable: 'المعالجة على الخادم غير متاحة حالياً.',
-  },
   errors: {
     tooLarge: 'حجم الملف أكبر من ٣٠ ميجابايت. جرّب صورة أصغر.',
     tooManyPixels: 'أبعاد الصورة كبيرة جداً (الحد ٣٠ ميجابكسل).',
@@ -180,21 +158,34 @@ const en: Dictionary = {
     title: 'Muzeel — AI Background Remover',
     description:
       'Remove any image background in seconds, at full resolution with no watermark. Processing happens in your browser — your images never leave your device.',
-    ogAlt: 'Muzeel — AI Background Remover',
   },
   nav: {
     brand: 'Muzeel',
-    tagline: 'Background Removal',
     switchLang: 'العربية',
-    github: 'Source',
   },
   hero: {
-    badge: 'Runs in your browser',
-    title: 'Remove your background',
-    titleAccent: 'in one second',
-    subtitle:
-      'Upload an image and get a transparent cutout at full resolution — no watermark, no sign-up.',
-    privacyNote: 'Your images are processed on your device and never uploaded.',
+    title: 'The background.',
+    titleAccent: 'Drag to remove it.',
+    subtitle: 'Full resolution. No watermark. No sign-up.',
+    revealHint: 'Drag to compare before and after background removal',
+    revealCaption: 'A real photo, cut out by the same engine that runs in your browser.',
+  },
+  samples: {
+    title: 'Or try one of these:',
+    portrait: 'Dense hair',
+    product: 'Product shot',
+    fur: 'Soft fur',
+  },
+  showcase: {
+    privacyTitle: 'It never leaves your device.',
+    privacyBody:
+      'Processing happens inside the browser itself. Nothing is uploaded, nothing is stored, and no server ever sees your image — it even works with the network off.',
+    precisionTitle: 'Strand by strand.',
+    precisionBody:
+      'The open-source BiRefNet model separates the hardest detail there is: flyaway hair, fur, and the edges of glass.',
+    controlTitle: 'And when it slips, you fix it.',
+    controlBody:
+      'Restore and erase brushes, edge tuning, and any colour or image behind the subject — all at the original resolution.',
   },
   dropzone: {
     title: 'Drop your image here',
@@ -202,29 +193,6 @@ const en: Dictionary = {
     paste: 'You can also paste directly with Ctrl+V',
     formats: 'PNG, JPG or WEBP — up to 30 MB',
     button: 'Choose an image',
-    tryExample: 'Or try a sample:',
-    exampleAlt: 'Sample image',
-  },
-  features: {
-    title: 'Why Muzeel?',
-    items: [
-      {
-        title: 'Fully private',
-        body: 'Processing runs entirely in your browser. Your image never leaves your device and is never stored.',
-      },
-      {
-        title: 'Original resolution',
-        body: 'You get the image at its exact original dimensions — no downscaling, no watermark.',
-      },
-      {
-        title: 'Manual touch-up',
-        body: 'A brush to restore or erase any area, because even the best model gets it wrong sometimes.',
-      },
-      {
-        title: 'Works offline',
-        body: 'After the first use the engine stays cached in your browser and works without a connection.',
-      },
-    ],
   },
   engine: {
     preparing: 'Preparing the engine',
@@ -243,12 +211,9 @@ const en: Dictionary = {
     newImage: 'New image',
     download: 'Download',
     downloading: 'Preparing…',
-    reset: 'Reset',
     undo: 'Undo',
     redo: 'Redo',
     compare: 'Compare',
-    original: 'Original',
-    result: 'Result',
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
     fit: 'Fit to screen',
@@ -305,15 +270,6 @@ const en: Dictionary = {
       dimensions: 'Dimensions',
       estimated: 'Estimated size',
     },
-  },
-  quality: {
-    title: 'Processing quality',
-    auto: 'Automatic',
-    local: 'On my device',
-    server: 'High quality (server)',
-    localHint: 'Faster and more private — nothing is uploaded.',
-    serverHint: 'Larger model with sharper edges — the image is uploaded temporarily.',
-    serverUnavailable: 'Server processing is currently unavailable.',
   },
   errors: {
     tooLarge: 'The file is larger than 30 MB. Try a smaller image.',

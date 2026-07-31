@@ -89,12 +89,12 @@ export function BackgroundPanel({
                   style={{ background: color }}
                   className={`size-7 rounded-lg border transition ${
                     background.color === color
-                      ? 'border-brand-400 ring-2 ring-brand-400/40'
-                      : 'border-ink-600 hover:border-ink-400'
+                      ? 'border-azure ring-2 ring-azure/40'
+                      : 'border-hairline hover:border-chalk-soft'
                   }`}
                 />
               ))}
-              <label className="flex size-7 cursor-pointer items-center justify-center rounded-lg border border-ink-600 bg-ink-800 text-ink-300 hover:border-ink-400">
+              <label className="flex size-7 cursor-pointer items-center justify-center rounded-lg border border-hairline bg-shell-high text-chalk-soft hover:border-chalk-soft">
                 <span aria-hidden className="text-xs">
                   +
                 </span>
@@ -117,14 +117,14 @@ export function BackgroundPanel({
                 aria-label={`${t.gradient} 1`}
                 value={background.from}
                 onChange={(event) => onBackground({ ...background, from: event.target.value })}
-                className="h-9 w-full cursor-pointer rounded-lg border border-ink-700 bg-ink-850"
+                className="h-9 w-full cursor-pointer rounded-lg border border-hairline bg-shell"
               />
               <input
                 type="color"
                 aria-label={`${t.gradient} 2`}
                 value={background.to}
                 onChange={(event) => onBackground({ ...background, to: event.target.value })}
-                className="h-9 w-full cursor-pointer rounded-lg border border-ink-700 bg-ink-850"
+                className="h-9 w-full cursor-pointer rounded-lg border border-hairline bg-shell"
               />
             </div>
             <Slider
@@ -141,7 +141,7 @@ export function BackgroundPanel({
           <button
             type="button"
             onClick={() => onBackground({ kind: 'transparent' })}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-ink-700 py-2 text-sm text-ink-300 hover:bg-ink-800"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-hairline py-2 text-sm text-chalk-soft hover:bg-shell-high"
           >
             <CloseIcon className="size-4" />
             {t.removeImage}
@@ -158,7 +158,7 @@ export function BackgroundPanel({
         />
 
         {shadow.enabled ? (
-          <div className="space-y-4 border-s-2 border-ink-800 ps-4">
+          <div className="space-y-4 rounded-xl bg-shell/60 p-3.5">
             <Slider
               label={t.shadowBlur}
               min={0}
@@ -202,7 +202,7 @@ export function BrushPanel({
 
   return (
     <PanelSection title={t.title}>
-      <p className="text-xs leading-relaxed text-ink-400">{t.hint}</p>
+      <p className="text-xs leading-relaxed text-chalk-soft">{t.hint}</p>
 
       <Segmented
         label={t.title}
@@ -253,7 +253,7 @@ export function EdgePanel({
 
   return (
     <PanelSection title={t.title}>
-      <p className="text-xs leading-relaxed text-ink-400">{t.hint}</p>
+      <p className="text-xs leading-relaxed text-chalk-soft">{t.hint}</p>
 
       <Slider
         label={t.feather}
@@ -336,7 +336,7 @@ export function ExportPanel({
       />
 
       {settings.trim ? (
-        <div className="border-s-2 border-ink-800 ps-4">
+        <div className="rounded-xl bg-shell/60 p-3.5">
           <Slider
             label={t.padding}
             min={0}
@@ -349,9 +349,9 @@ export function ExportPanel({
         </div>
       ) : null}
 
-      <div className="flex items-baseline justify-between rounded-xl bg-ink-850 px-3 py-2.5 text-sm">
-        <span className="text-ink-400">{t.dimensions}</span>
-        <span dir="ltr" className="font-mono text-xs tabular-nums text-ink-200">
+      <div className="flex items-baseline justify-between rounded-xl bg-shell px-3 py-2.5 text-sm">
+        <span className="text-chalk-soft">{t.dimensions}</span>
+        <span dir="ltr" className="font-mono text-xs tabular-nums text-chalk">
           {dimensions.width} × {dimensions.height}
         </span>
       </div>

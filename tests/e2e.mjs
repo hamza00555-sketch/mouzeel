@@ -175,11 +175,15 @@ await page.setInputFiles('input[type=file]', {
   mimeType: 'image/png',
   buffer: Buffer.from(fixtures.source, 'base64'),
 });
-await page.waitForSelector('[role=alert], .border-red-500\\/30', { timeout: 15_000 }).catch(() => {});
-check(
-  'shows an explanation when no engine can run',
-  await page.locator('.border-red-500\\/30').isVisible().catch(() => false),
-);
+// `.first()` keeps this strict-mode-safe, and the visibility is read from the
+// same locator we waited on rather than a second, racier query.
+const alert = page.locator('[role=alert]').first();
+const shown = await alert
+  .waitFor({ state: 'visible', timeout: 15_000 })
+  .then(() => true)
+  .catch(() => false);
+check('shows an explanation when no engine can run', shown,
+  shown ? (await alert.innerText()).slice(0, 40) : 'never appeared');
 await shot('05-no-engine');
 
 check('no console errors', consoleErrors.length === 0, consoleErrors[0] ?? '');

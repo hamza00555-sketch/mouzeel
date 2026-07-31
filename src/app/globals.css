@@ -1,63 +1,122 @@
 @import 'tailwindcss';
 
+/*
+ * Apple's product-page grammar: pure black and pure white as full-bleed stages,
+ * one blue that only ever means "act on this", and type that carries the whole
+ * hierarchy. No cards, no borders doing decorative work, no tinted greys.
+ */
 @theme {
-  --color-ink-950: #070a10;
-  --color-ink-900: #0b0f17;
-  --color-ink-850: #10151f;
-  --color-ink-800: #161c28;
-  --color-ink-700: #1f2635;
-  --color-ink-600: #2b3446;
-  --color-ink-400: #6b7688;
-  --color-ink-300: #97a1b2;
-  --color-ink-200: #c3cad6;
-  --color-ink-50: #f2f5fa;
+  /* Stages. Deliberately absolute — the imagery has to sit on true black. */
+  --color-void: oklch(0% 0 0);
+  --color-canvas: oklch(100% 0 0);
+  --color-fog: oklch(96.2% 0 0);
+  --color-slate: oklch(14.5% 0.004 265);
 
-  --color-brand-400: #7aa2ff;
-  --color-brand-500: #4f7dfb;
-  --color-brand-600: #3a5fe0;
-  --color-accent-400: #47e0c4;
+  /* Ink ramps, one per stage. Verified ≥4.5:1 for body use. */
+  --color-ink: oklch(12% 0.004 265);
+  --color-ink-soft: oklch(43% 0.006 265); /* 7.6:1 on white */
+  --color-chalk: oklch(100% 0 0);
+  --color-chalk-soft: oklch(72.5% 0.006 265); /* 7.9:1 on black */
 
-  --font-sans: var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  /* Editor chrome: the one place a mid-grey UI is correct, so the image wins. */
+  --color-shell: oklch(19.5% 0.004 265);
+  --color-shell-high: oklch(25.5% 0.005 265);
+  --color-hairline: oklch(31% 0.005 265);
 
-  --radius-xl2: 1.25rem;
+  /*
+   * The single accent. Nothing decorative is ever painted with it.
+   * L is pinned at 56% because that is the one band where the blue works both
+   * ways: white text on it clears 4.65:1, and it as text on black clears
+   * 4.52:1. Brighter and the filled buttons fail; darker and the link text does.
+   * Hover darkens rather than brightens, which keeps the fill passing.
+   */
+  --color-azure: oklch(56% 0.19 253);
+  --color-azure-lift: oklch(51% 0.19 253);
+
+  --font-sans: var(--font-arabic), -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui,
+    sans-serif;
+
+  /* Apple's own curve, used for anything that should feel like hardware. */
+  --ease-hardware: cubic-bezier(0.28, 0.11, 0.32, 1);
+
+  --z-sticky: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
 }
 
 :root {
   color-scheme: dark;
+  background: var(--color-void);
 }
 
 body {
-  background: var(--color-ink-950);
-  color: var(--color-ink-50);
+  background: var(--color-void);
+  color: var(--color-chalk);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ambient glow behind the hero — cheap, and it stops the dark page reading flat. */
-.aurora::before {
-  content: '';
-  position: absolute;
-  inset: -30% 0 auto 0;
-  height: 520px;
-  background:
-    radial-gradient(45% 55% at 30% 40%, color-mix(in oklab, var(--color-brand-500) 28%, transparent), transparent 70%),
-    radial-gradient(40% 50% at 72% 30%, color-mix(in oklab, var(--color-accent-400) 16%, transparent), transparent 70%);
-  filter: blur(30px);
-  pointer-events: none;
-  z-index: 0;
+/*
+ * Display type. Apple sets headlines tight and heavy; Arabic needs a touch more
+ * line-height than Latin at the same size or the descenders and dots collide.
+ */
+.display {
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.08;
+  text-wrap: balance;
 }
 
-/* Standard transparency checkerboard, drawn with gradients so it needs no asset. */
+:where([dir='rtl']) .display {
+  /* Arabic letterforms have no ascender/descender rhythm to tighten into. */
+  letter-spacing: 0;
+  line-height: 1.24;
+}
+
+.lede {
+  text-wrap: pretty;
+  line-height: 1.5;
+  max-width: 34ch;
+}
+
+/* Transparency checkerboard, drawn with gradients so it needs no asset. */
 .checkerboard {
+  --sq: oklch(26% 0.004 265);
   background-image:
-    linear-gradient(45deg, #202634 25%, transparent 25%),
-    linear-gradient(-45deg, #202634 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #202634 75%),
-    linear-gradient(-45deg, transparent 75%, #202634 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
-  background-color: #171d29;
+    linear-gradient(45deg, var(--sq) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--sq) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--sq) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--sq) 75%);
+  background-size: 22px 22px;
+  background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+  background-color: oklch(21% 0.004 265);
 }
 
+/*
+ * Scroll reveal. The default state is visible: if the observer never runs —
+ * headless render, disabled JS, a background tab — the content still ships.
+ * The class only opts an element *into* being animated.
+ */
+.reveal {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal.reveal-armed {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+
+  .reveal.reveal-in {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.9s var(--ease-hardware),
+      transform 0.9s var(--ease-hardware);
+  }
+}
+
+/* Range inputs, restyled to Apple's slider proportions. */
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
@@ -67,39 +126,46 @@ input[type='range'] {
 }
 
 input[type='range']::-webkit-slider-runnable-track {
-  height: 0.35rem;
+  height: 0.25rem;
   border-radius: 999px;
-  background: var(--color-ink-700);
+  background: var(--color-hairline);
 }
 
 input[type='range']::-moz-range-track {
-  height: 0.35rem;
+  height: 0.25rem;
   border-radius: 999px;
-  background: var(--color-ink-700);
+  background: var(--color-hairline);
 }
 
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 1rem;
-  height: 1rem;
-  margin-top: -0.325rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: -0.4375rem;
   border-radius: 999px;
-  background: var(--color-brand-400);
-  border: 2px solid var(--color-ink-900);
+  background: var(--color-chalk);
+  box-shadow: 0 1px 4px oklch(0% 0 0 / 0.45);
 }
 
 input[type='range']::-moz-range-thumb {
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid var(--color-ink-900);
+  width: 1.125rem;
+  height: 1.125rem;
+  border: none;
   border-radius: 999px;
-  background: var(--color-brand-400);
+  background: var(--color-chalk);
+  box-shadow: 0 1px 4px oklch(0% 0 0 / 0.45);
 }
 
 input[type='range']:focus-visible::-webkit-slider-thumb {
-  outline: 2px solid var(--color-brand-400);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-azure);
+  outline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-azure);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -109,5 +175,6 @@ input[type='range']:focus-visible::-webkit-slider-thumb {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

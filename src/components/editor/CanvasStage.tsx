@@ -134,7 +134,7 @@ export function CanvasStage({
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={wrapperRef}
-        className="checkerboard relative flex min-h-[320px] flex-1 items-center justify-center overflow-hidden rounded-xl2 border border-ink-800"
+        className="checkerboard relative flex min-h-[320px] flex-1 items-center justify-center overflow-hidden rounded-[1.25rem]"
       >
         <canvas
           ref={canvasRef}
@@ -153,11 +153,11 @@ export function CanvasStage({
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
-        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-ink-700 bg-ink-900/90 p-1 backdrop-blur">
+        <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-black/55 p-1 backdrop-blur-xl backdrop-saturate-150">
           <StageButton title={dict.editor.zoomOut} onClick={() => setZoom((z) => Math.max(0.2, z - 0.25))}>
             <MinusIcon className="size-4" />
           </StageButton>
-          <span className="w-12 text-center font-mono text-xs tabular-nums text-ink-300">
+          <span className="w-12 text-center font-mono text-xs tabular-nums text-chalk-soft">
             {Math.round(zoom * 100)}%
           </span>
           <StageButton title={dict.editor.zoomIn} onClick={() => setZoom((z) => Math.min(8, z + 0.25))}>
@@ -167,7 +167,7 @@ export function CanvasStage({
             <FitIcon className="size-4" />
           </StageButton>
 
-          <span className="mx-1 h-5 w-px bg-ink-700" />
+          <span className="mx-1 h-5 w-px bg-hairline" />
 
           <StageButton
             title={dict.editor.compare}
@@ -200,7 +200,7 @@ function StageButton({
       title={title}
       aria-label={title}
       className={`flex size-8 items-center justify-center rounded-full transition ${
-        active ? 'bg-brand-500 text-white' : 'text-ink-300 hover:bg-ink-800 hover:text-ink-50'
+        active ? 'bg-azure text-white' : 'text-chalk-soft hover:bg-shell-high hover:text-chalk'
       }`}
       {...handlers}
     >

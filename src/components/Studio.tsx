@@ -1,24 +1,17 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 import { Dropzone } from '@/components/Dropzone';
 import { Editor } from '@/components/editor/Editor';
-import {
-  AlertIcon,
-  BrushIcon,
-  ExpandIcon,
-  OfflineIcon,
-  ShieldIcon,
-  SparkIcon,
-} from '@/components/icons';
+import { HeroReveal } from '@/components/marketing/HeroReveal';
+import { Reveal } from '@/components/marketing/Reveal';
 import { isModelCached, supportsWebGPU } from '@/lib/bg/local-engine';
 import { removeBackground, warmLocalEngine } from '@/lib/bg/remove';
 import { MuzeelError } from '@/lib/bg/types';
 import type { Cutout, ErrorCode, Progress } from '@/lib/bg/types';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
-
-/** Parallel to `dict.features.items`. */
-const FEATURE_ICONS = [ShieldIcon, ExpandIcon, BrushIcon, OfflineIcon];
+import { fetchSampleAsFile, samples } from '@/lib/samples';
 
 type State =
   | { status: 'idle' }
@@ -31,7 +24,6 @@ export function Studio({ dict }: { dict: Dictionary }) {
   const [fileName, setFileName] = useState('image');
   const [localReady, setLocalReady] = useState(false);
   const [warmup, setWarmup] = useState<Progress | null>(null);
-  // Kept so the retry button can re-run the exact file that failed.
   const [lastFile, setLastFile] = useState<File | null>(null);
   /** Bumped per processed image so the editor remounts with fresh view state. */
   const [imageKey, setImageKey] = useState(0);
@@ -52,10 +44,7 @@ export function Studio({ dict }: { dict: Dictionary }) {
       });
       setState({ status: 'ready', cutout });
     } catch (error) {
-      setState({
-        status: 'error',
-        code: error instanceof MuzeelError ? error.code : 'unknown',
-      });
+      setState({ status: 'error', code: error instanceof MuzeelError ? error.code : 'unknown' });
     }
   }, []);
 
@@ -95,24 +84,27 @@ export function Studio({ dict }: { dict: Dictionary }) {
   }, [state]);
 
   if (state.status === 'ready') {
+    const local = state.cutout.processedBy === 'local';
+
     return (
       <main className="mx-auto flex min-h-0 w-full max-w-[1700px] flex-1 flex-col gap-3 px-4 py-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            tone={state.cutout.processedBy === 'local' ? 'good' : 'info'}
-            icon={state.cutout.processedBy === 'local' ? <ShieldIcon className="size-3.5" /> : <SparkIcon className="size-3.5" />}
-          >
-            {state.cutout.processedBy === 'local' ? dict.engine.localBadge : dict.engine.serverBadge}
-          </Badge>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1 text-[13px]">
+          <span className="flex items-center gap-1.5 text-chalk-soft">
+            <span
+              className={`size-1.5 rounded-full ${local ? 'bg-emerald-400' : 'bg-azure'}`}
+              aria-hidden
+            />
+            {local ? dict.engine.localBadge : dict.engine.serverBadge}
+          </span>
 
           {warmup ? (
-            <Badge tone="muted">
+            <span className="text-chalk-soft/70">
               {dict.engine.downloading} · {Math.round((warmup.ratio ?? 0) * 100)}%
-            </Badge>
+            </span>
           ) : null}
 
-          {localReady && state.cutout.processedBy === 'server' && !warmup ? (
-            <Badge tone="muted">{dict.engine.localReady}</Badge>
+          {localReady && !local && !warmup ? (
+            <span className="text-chalk-soft/70">{dict.engine.localReady}</span>
           ) : null}
         </div>
 
@@ -127,59 +119,93 @@ export function Studio({ dict }: { dict: Dictionary }) {
     );
   }
 
+  const busy = state.status === 'working';
+
   return (
-    <main className="relative flex-1 overflow-y-auto">
-      <div className="aurora relative mx-auto flex w-full max-w-6xl flex-col px-4 pb-16 pt-10 sm:pt-14">
-        <section className="relative z-10 mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-ink-700 bg-ink-900/70 px-3 py-1 text-xs text-ink-300">
-            <ShieldIcon className="size-3.5 text-accent-400" />
-            {dict.hero.badge}
-          </span>
-
-          <h1 className="mt-5 text-balance text-4xl font-bold leading-[1.15] tracking-tight text-ink-50 sm:text-5xl">
-            {dict.hero.title}{' '}
-            <span className="bg-gradient-to-l from-brand-400 to-accent-400 bg-clip-text text-transparent">
-              {dict.hero.titleAccent}
-            </span>
+    <main className="flex-1 overflow-y-auto">
+      {/*
+        Hero: headline first, then the product. Apple never buries the line
+        under the image, and the reveal is sized by viewport *height* so both
+        always land above the fold on a laptop.
+      */}
+      <section className="flex min-h-[calc(100svh-3rem)] flex-col items-center justify-center gap-8 px-6 py-12 sm:gap-10">
+        <div className="max-w-3xl text-center">
+          {/*
+            Two lines, not one. Apple's clipped-sentence headline style puts a
+            full stop mid-line, and in RTL that stop lands at the far left of
+            the phrase before it — with a gap after, it reads as a typo rather
+            than punctuation. Breaking the lines keeps each stop beside its own
+            sentence.
+          */}
+          <h1 className="display text-[clamp(2.5rem,7.5vw,4.5rem)]">
+            {dict.hero.title}
+            <br />
+            <span className="text-chalk-soft">{dict.hero.titleAccent}</span>
           </h1>
-
-          <p className="mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-ink-300">
+          <p className="lede mx-auto mt-4 text-[clamp(1rem,2.2vw,1.3125rem)] text-chalk-soft">
             {dict.hero.subtitle}
           </p>
-        </section>
-
-        <div className="relative z-10 mx-auto mt-10 w-full max-w-4xl">
-          {state.status === 'working' ? <Working dict={dict} progress={state.progress} /> : null}
-          {state.status === 'error' ? <ErrorCard /> : null}
-          {state.status === 'idle' ? (
-            <Dropzone dict={dict} onSelect={(file) => void process(file)} />
-          ) : null}
         </div>
 
-        <section className="relative z-10 mt-20">
-          <h2 className="text-center text-xl font-semibold text-ink-50">{dict.features.title}</h2>
+        <figure className="flex min-h-0 flex-col items-center">
+          <HeroReveal hint={dict.hero.revealHint} />
+          <figcaption className="mt-4 max-w-xs text-center text-[12px] leading-relaxed text-chalk-soft/80">
+            {dict.hero.revealCaption}
+          </figcaption>
+        </figure>
+      </section>
 
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {dict.features.items.map((item, index) => {
-              const Icon = FEATURE_ICONS[index];
-              return (
-                <li key={item.title} className="rounded-xl2 border border-ink-800 bg-ink-900/50 p-5">
-                  <span className="flex size-10 items-center justify-center rounded-xl bg-ink-800 text-brand-400">
-                    <Icon className="size-5" />
-                  </span>
-                  <h3 className="mt-4 text-sm font-semibold text-ink-50">{item.title}</h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink-400">{item.body}</p>
-                </li>
-              );
-            })}
-          </ul>
+      {/* ── The tool itself, on white so it reads as the working surface ──── */}
+      <section id="tool" className="scroll-mt-12 bg-canvas px-6 py-20 text-ink sm:py-28">
+        <div className="mx-auto w-full max-w-3xl">
+          {busy ? <Working dict={dict} progress={state.progress} /> : null}
+          {state.status === 'error' ? <ErrorCard /> : null}
+          {state.status === 'idle' ? (
+            <>
+              <Dropzone dict={dict} onSelect={(file) => void process(file)} />
 
-          <div className="mt-14 flex flex-col items-center gap-1.5 border-t border-ink-800/80 pt-8 text-center text-xs text-ink-400">
-            <p>{dict.footer.privacy}</p>
-            <p>{dict.footer.builtWith}</p>
-          </div>
-        </section>
-      </div>
+              <div className="mt-10">
+                <p className="text-center text-[15px] text-ink-soft">{dict.samples.title}</p>
+                <ul className="mt-5 grid grid-cols-3 gap-3 sm:gap-5">
+                  {samples.map((sample) => (
+                    <li key={sample.id}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void fetchSampleAsFile(sample).then(process).catch(() => {})
+                        }
+                        className="group block w-full text-start"
+                      >
+                        <span className="block overflow-hidden rounded-2xl bg-fog">
+                          <Image
+                            src={sample.src}
+                            alt={dict.samples[sample.labelKey]}
+                            width={1000}
+                            height={1000}
+                            sizes="(max-width: 640px) 30vw, 13rem"
+                            className="aspect-square w-full object-cover transition-transform duration-700 ease-hardware group-hover:scale-[1.04]"
+                          />
+                        </span>
+                        <span className="mt-2.5 block text-[13px] text-ink-soft transition-colors group-hover:text-ink">
+                          {dict.samples[sample.labelKey]}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </section>
+
+      {/* ── Three claims, each given its own full stage ───────────────────── */}
+      <Showcase dict={dict} />
+
+      <footer className="border-t border-white/10 px-6 py-10 text-center text-[13px] text-chalk-soft/70">
+        <p>{dict.footer.privacy}</p>
+        <p className="mt-1.5">{dict.footer.builtWith}</p>
+      </footer>
     </main>
   );
 
@@ -187,19 +213,14 @@ export function Studio({ dict }: { dict: Dictionary }) {
     if (state.status !== 'error') return null;
 
     return (
-      <div className="rounded-xl2 border border-red-500/30 bg-red-500/5 p-6 text-center sm:p-10">
-        <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-red-500/15 text-red-300">
-          <AlertIcon className="size-6" />
-        </span>
-        <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-ink-200">
-          {dict.errors[state.code]}
-        </p>
-        <div className="mt-5 flex justify-center gap-2">
+      <div role="alert" className="mx-auto max-w-lg py-6 text-center">
+        <p className="text-[17px] leading-relaxed text-ink">{dict.errors[state.code]}</p>
+        <div className="mt-7 flex justify-center gap-3">
           {lastFile ? (
             <button
               type="button"
               onClick={() => void process(lastFile)}
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+              className="rounded-full bg-azure px-6 py-2.5 text-[15px] font-medium text-white transition hover:bg-azure-lift"
             >
               {dict.errors.retry}
             </button>
@@ -207,7 +228,7 @@ export function Studio({ dict }: { dict: Dictionary }) {
           <button
             type="button"
             onClick={() => setState({ status: 'idle' })}
-            className="rounded-xl border border-ink-700 px-4 py-2 text-sm text-ink-200 hover:bg-ink-800"
+            className="rounded-full px-6 py-2.5 text-[15px] font-medium text-azure transition hover:bg-ink/5"
           >
             {dict.errors.dismiss}
           </button>
@@ -215,6 +236,59 @@ export function Studio({ dict }: { dict: Dictionary }) {
       </div>
     );
   }
+}
+
+function Showcase({ dict }: { dict: Dictionary }) {
+  const { showcase } = dict;
+
+  return (
+    <>
+      {/* Privacy: black, quiet, no imagery — the claim is about absence. */}
+      <section className="px-6 py-28 sm:py-40">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <h2 className="display text-[clamp(2rem,6vw,3.75rem)]">{showcase.privacyTitle}</h2>
+          <p className="lede mx-auto mt-6 text-[clamp(1rem,2.2vw,1.3125rem)] text-chalk-soft">
+            {showcase.privacyBody}
+          </p>
+        </Reveal>
+      </section>
+
+      {/* Precision: the cutout again, huge, cropped into the hair. */}
+      <section className="bg-canvas px-6 py-28 text-ink sm:py-40">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-2 md:gap-20">
+          <Reveal>
+            <h2 className="display text-[clamp(2rem,5vw,3.5rem)]">{showcase.precisionTitle}</h2>
+            <p className="lede mt-6 text-[clamp(1rem,2vw,1.25rem)] text-ink-soft">
+              {showcase.precisionBody}
+            </p>
+          </Reveal>
+
+          {/* Cropped into the head so the flying strands read at full size —
+              the checkerboard behind them is what makes "transparent" legible. */}
+          <Reveal delay={120} className="checkerboard aspect-square overflow-hidden rounded-[1.75rem]">
+            <Image
+              src="/media/hero-after.webp"
+              alt=""
+              width={1100}
+              height={1467}
+              sizes="(max-width: 768px) 88vw, 32rem"
+              className="size-full object-cover object-[50%_14%]"
+            />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Control: back to black, closing the alternation. */}
+      <section className="px-6 py-28 sm:py-40">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <h2 className="display text-[clamp(2rem,6vw,3.75rem)]">{showcase.controlTitle}</h2>
+          <p className="lede mx-auto mt-6 text-[clamp(1rem,2.2vw,1.3125rem)] text-chalk-soft">
+            {showcase.controlBody}
+          </p>
+        </Reveal>
+      </section>
+    </>
+  );
 }
 
 function Working({ dict, progress }: { dict: Dictionary; progress: Progress }) {
@@ -232,55 +306,28 @@ function Working({ dict, progress }: { dict: Dictionary; progress: Progress }) {
   const ratio = progress.ratio;
 
   return (
-    <div className="rounded-xl2 border border-ink-800 bg-ink-900/60 p-8 text-center sm:p-14">
-      <div className="mx-auto max-w-sm space-y-5">
-        <p className="text-base font-medium text-ink-50">{label}</p>
+    <div className="mx-auto max-w-sm py-14 text-center">
+      <p className="text-[17px] font-medium text-ink">{label}</p>
 
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={ratio === null ? undefined : Math.round(ratio * 100)}
+        aria-label={label}
+        className="mt-5 h-1 overflow-hidden rounded-full bg-ink/10"
+      >
         <div
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={ratio === null ? undefined : Math.round(ratio * 100)}
-          aria-label={label}
-          className="h-1.5 overflow-hidden rounded-full bg-ink-800"
-        >
-          <div
-            className={`h-full rounded-full bg-brand-500 ${
-              ratio === null ? 'w-1/3 animate-pulse' : 'transition-[width] duration-200'
-            }`}
-            style={ratio === null ? undefined : { width: `${Math.round(ratio * 100)}%` }}
-          />
-        </div>
-
-        {progress.phase === 'downloading' ? (
-          <p className="text-xs leading-relaxed text-ink-400">{dict.engine.preparingHint}</p>
-        ) : null}
+          className={`h-full rounded-full bg-azure ${
+            ratio === null ? 'w-1/3 animate-pulse' : 'transition-[width] duration-300 ease-hardware'
+          }`}
+          style={ratio === null ? undefined : { width: `${Math.round(ratio * 100)}%` }}
+        />
       </div>
+
+      {progress.phase === 'downloading' ? (
+        <p className="mt-4 text-[13px] leading-relaxed text-ink-soft">{dict.engine.preparingHint}</p>
+      ) : null}
     </div>
-  );
-}
-
-function Badge({
-  children,
-  tone = 'muted',
-  icon,
-}: {
-  children: React.ReactNode;
-  tone?: 'good' | 'info' | 'muted';
-  icon?: React.ReactNode;
-}) {
-  const tones = {
-    good: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300',
-    info: 'border-brand-500/25 bg-brand-500/10 text-brand-400',
-    muted: 'border-ink-700 bg-ink-850 text-ink-300',
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${tones[tone]}`}
-    >
-      {icon}
-      {children}
-    </span>
   );
 }

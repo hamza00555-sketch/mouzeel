@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { UploadIcon } from '@/components/icons';
 import { ACCEPTED_TYPES } from '@/lib/bg/constants';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 
@@ -51,10 +50,8 @@ export function Dropzone({
         setDragging(false);
         handleFiles(event.dataTransfer.files);
       }}
-      className={`group relative rounded-xl2 border-2 border-dashed p-8 text-center transition sm:p-12 ${
-        dragging
-          ? 'border-brand-400 bg-brand-500/10'
-          : 'border-ink-700 bg-ink-900/60 hover:border-ink-600 hover:bg-ink-900'
+      className={`rounded-[1.75rem] px-6 py-14 text-center transition-colors duration-300 sm:py-20 ${
+        dragging ? 'bg-azure/[0.07]' : 'bg-fog'
       }`}
     >
       <input
@@ -68,33 +65,20 @@ export function Dropzone({
         }}
       />
 
-      <div className="mx-auto flex max-w-md flex-col items-center gap-4">
-        <span
-          className={`flex size-14 items-center justify-center rounded-2xl transition ${
-            dragging ? 'bg-brand-500 text-white' : 'bg-ink-800 text-brand-400'
-          }`}
-        >
-          <UploadIcon className="size-7" />
-        </span>
+      <p className="text-[clamp(1.375rem,3.5vw,1.75rem)] font-semibold tracking-tight text-ink">
+        {dict.dropzone.title}
+      </p>
 
-        <div className="space-y-1.5">
-          <p className="text-lg font-semibold text-ink-50">{dict.dropzone.title}</p>
-          <p className="text-sm text-ink-300">{dict.dropzone.subtitle}</p>
-        </div>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="mt-6 rounded-full bg-azure px-7 py-3 text-[15px] font-medium text-white transition hover:bg-azure-lift active:scale-[0.98]"
+      >
+        {dict.dropzone.button}
+      </button>
 
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
-        >
-          {dict.dropzone.button}
-        </button>
-
-        <div className="space-y-1 text-xs text-ink-400">
-          <p>{dict.dropzone.formats}</p>
-          <p className="hidden sm:block">{dict.dropzone.paste}</p>
-        </div>
-      </div>
+      <p className="mt-6 text-[13px] text-ink-soft">{dict.dropzone.formats}</p>
+      <p className="mt-1 hidden text-[13px] text-ink-soft sm:block">{dict.dropzone.paste}</p>
     </div>
   );
 }
