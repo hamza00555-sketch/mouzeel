@@ -1,0 +1,42 @@
+{
+  "name": "mouzeel",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "node scripts/copy-ort-assets.mjs",
+    "dev": "next dev",
+    "prebuild": "node scripts/copy-ort-assets.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "node tests/e2e.mjs"
+  },
+  "overrides": {
+    "postcss": "^8.5.25",
+    "sharp": "^0.35.3",
+    "brace-expansion@1": "^1.1.12",
+    "brace-expansion@2": "^2.0.2"
+  },
+  "dependencies": {
+    "@fal-ai/client": "^1.10.1",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.1",
+    "next": "16.2.12",
+    "onnxruntime-web": "^1.27.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@webgpu/types": "^0.1.71",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.12",
+    "playwright": "^1.62.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

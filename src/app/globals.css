@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink-950: #070a10;
+  --color-ink-900: #0b0f17;
+  --color-ink-850: #10151f;
+  --color-ink-800: #161c28;
+  --color-ink-700: #1f2635;
+  --color-ink-600: #2b3446;
+  --color-ink-400: #6b7688;
+  --color-ink-300: #97a1b2;
+  --color-ink-200: #c3cad6;
+  --color-ink-50: #f2f5fa;
+
+  --color-brand-400: #7aa2ff;
+  --color-brand-500: #4f7dfb;
+  --color-brand-600: #3a5fe0;
+  --color-accent-400: #47e0c4;
+
+  --font-sans: var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-xl2: 1.25rem;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ink-950);
+  color: var(--color-ink-50);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient glow behind the hero — cheap, and it stops the dark page reading flat. */
+.aurora::before {
+  content: '';
+  position: absolute;
+  inset: -30% 0 auto 0;
+  height: 520px;
+  background:
+    radial-gradient(45% 55% at 30% 40%, color-mix(in oklab, var(--color-brand-500) 28%, transparent), transparent 70%),
+    radial-gradient(40% 50% at 72% 30%, color-mix(in oklab, var(--color-accent-400) 16%, transparent), transparent 70%);
+  filter: blur(30px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Standard transparency checkerboard, drawn with gradients so it needs no asset. */
+.checkerboard {
+  background-image:
+    linear-gradient(45deg, #202634 25%, transparent 25%),
+    linear-gradient(-45deg, #202634 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #202634 75%),
+    linear-gradient(-45deg, transparent 75%, #202634 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  background-color: #171d29;
+}
+
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 1.5rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--color-ink-700);
+}
+
+input[type='range']::-moz-range-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--color-ink-700);
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.325rem;
+  border-radius: 999px;
+  background: var(--color-brand-400);
+  border: 2px solid var(--color-ink-900);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--color-ink-900);
+  border-radius: 999px;
+  background: var(--color-brand-400);
+}
+
+input[type='range']:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-brand-400);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
