@@ -141,6 +141,90 @@ const waitForControl = (page) =>
   await context.close();
 }
 
+// ── 3. a takeover must not wipe work in flight ──────────────────────────────
+// The first cut of the reload guard only counted the *ready* state, so a worker
+// activating mid-upload reloaded the page and dropped the user back to an empty
+// dropzone as if they had never picked a file.
+{
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  // Hold the request open so the app stays in its processing state.
+  await context.route('**/api/remove-background', async (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({ json: { available: true, hourlyLimit: 10, turnstile: false } });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20_000));
+    return route.abort();
+  });
+
+  await page.goto(`${BASE}/ar`, { waitUntil: 'load' });
+  await waitForControl(page).catch(() => {});
+
+  // Reload so the page starts life already controlled. Only such a page is
+  // eligible for a takeover reload — without this the hook bails out early and
+  // the test would pass no matter how broken the guard is.
+  await page.reload({ waitUntil: 'load' });
+  await waitForControl(page).catch(() => {});
+
+  // Sentinel: survives only if the page does not navigate.
+  await page.evaluate(() => {
+    window.__stillHere = true;
+    sessionStorage.removeItem('muzeel:sw-reloaded');
+  });
+
+  const controlled = await page.evaluate(() => Boolean(navigator.serviceWorker.controller));
+  check('page is under worker control before the takeover', controlled);
+
+  const png = Buffer.from(
+    await page.evaluate(async () => {
+      const canvas = new OffscreenCanvas(240, 240);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#2e7d32';
+      ctx.fillRect(0, 0, 240, 240);
+      const blob = await canvas.convertToBlob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(blob);
+      });
+    }),
+    'base64',
+  );
+
+  await page.setInputFiles('input[type=file]', {
+    name: 'busy.png',
+    mimeType: 'image/png',
+    buffer: png,
+  });
+
+  const busy = await page
+    .locator('[role=progressbar]')
+    .first()
+    .waitFor({ state: 'visible', timeout: 15_000 })
+    .then(() => true)
+    .catch(() => false);
+  check('upload is in flight', busy);
+
+  // Fire the exact signal a newly activated worker sends.
+  await page.evaluate(() =>
+    navigator.serviceWorker.dispatchEvent(
+      new MessageEvent('message', { data: { type: 'muzeel:activated', version: 'v3' } }),
+    ),
+  );
+  await page.waitForTimeout(1500);
+
+  const survived = await page.evaluate(() => window.__stillHere === true);
+  check('a worker takeover does not reload away an upload', survived,
+    survived ? '' : 'the page reloaded and the upload was lost');
+  check(
+    'the progress UI is still on screen',
+    await page.locator('[role=progressbar]').first().isVisible().catch(() => false),
+  );
+
+  await context.close();
+}
+
 await browser.close();
 console.log(failures ? `\n${failures} check(s) failed` : '\nservice worker behaviour is correct');
 process.exit(failures ? 1 : 0);

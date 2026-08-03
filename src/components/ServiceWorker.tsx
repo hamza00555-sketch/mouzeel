@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { isEditing } from '@/lib/editor-activity';
+import { runWhenIdle } from '@/lib/editor-activity';
 
 /** Set once per tab so a misbehaving worker can't put us in a reload loop. */
 const RELOAD_FLAG = 'muzeel:sw-reloaded';
@@ -29,13 +29,16 @@ export function ServiceWorker() {
 
     const reloadIfSafe = () => {
       if (!wasControlled) return;
-      // Never yank an image out from under someone mid-edit; they get the new
-      // build on their next visit instead.
-      if (isEditing()) return;
       if (sessionStorage.getItem(RELOAD_FLAG)) return;
 
-      sessionStorage.setItem(RELOAD_FLAG, '1');
-      location.reload();
+      // Deferred, never dropped: reloading during an upload wipes work the user
+      // is waiting on, but a browser holding a poisoned cache still needs the
+      // reload — so it waits for the dropzone to be empty again.
+      runWhenIdle(() => {
+        if (sessionStorage.getItem(RELOAD_FLAG)) return;
+        sessionStorage.setItem(RELOAD_FLAG, '1');
+        location.reload();
+      });
     };
 
     const onMessage = (event: MessageEvent) => {

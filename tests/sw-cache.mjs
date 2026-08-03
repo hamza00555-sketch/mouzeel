@@ -98,8 +98,8 @@ check(
   /controllerchange/.test(hook) && /location\.reload\(\)/.test(hook),
 );
 check(
-  'reload is suppressed while an image is open',
-  /isEditing\(\)/.test(hook),
+  'reload waits for the app to be idle, never interrupting work',
+  /runWhenIdle\(/.test(hook),
 );
 check('reload is loop-guarded', /sessionStorage/.test(hook));
 
