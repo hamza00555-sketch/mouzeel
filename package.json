@@ -11,8 +11,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:e2e": "node tests/ort-assets.mjs && node tests/e2e.mjs",
-    "test:assets": "node tests/ort-assets.mjs"
+    "test:e2e": "node tests/ort-assets.mjs && node tests/sw-cache.mjs && node tests/e2e.mjs && node tests/sw-behaviour.mjs",
+    "test:assets": "node tests/ort-assets.mjs && node tests/sw-cache.mjs",
+    "test:sw": "node tests/sw-behaviour.mjs"
   },
   "overrides": {
     "postcss": "^8.5.25",

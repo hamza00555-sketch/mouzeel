@@ -10,6 +10,7 @@ import { isModelCached, supportsWebGPU } from '@/lib/bg/local-engine';
 import { removeBackground, warmLocalEngine } from '@/lib/bg/remove';
 import { MuzeelError } from '@/lib/bg/types';
 import type { Cutout, ErrorCode, Progress } from '@/lib/bg/types';
+import { setEditing } from '@/lib/editor-activity';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import { fetchSampleAsFile, samples } from '@/lib/samples';
 
@@ -31,6 +32,13 @@ export function Studio({ dict }: { dict: Dictionary }) {
   useEffect(() => {
     void isModelCached().then(setLocalReady);
   }, []);
+
+  // Lets the service-worker hook know an image is open, so it won't reload the
+  // page out from under an edit when a new worker takes over.
+  useEffect(() => {
+    setEditing(state.status === 'ready');
+    return () => setEditing(false);
+  }, [state.status]);
 
   const process = useCallback(async (file: File) => {
     setLastFile(file);
