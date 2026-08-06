@@ -2,29 +2,51 @@ import { fal } from '@fal-ai/client';
 import { NextResponse } from 'next/server';
 import { MAX_FILE_BYTES } from '@/lib/bg/constants';
 import { checkRateLimit, clientKey, hourlyLimit } from '@/lib/server/rate-limit';
+import { cutout } from '@/lib/server/segmenter';
 import { detectImageType, verifyTurnstile } from '@/lib/server/validate';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-function isConfigured() {
+/** Optional upgrade: sharper edges, but paid and not required for the site to work. */
+function falConfigured() {
   return Boolean(process.env.FAL_KEY);
 }
 
-/** Lets the client know whether to offer the high-quality option at all. */
 export function GET() {
   return NextResponse.json({
-    available: isConfigured(),
+    available: true,
+    engine: falConfigured() ? 'fal' : 'u2net',
     hourlyLimit,
     turnstile: Boolean(process.env.TURNSTILE_SECRET_KEY),
   });
 }
 
-export async function POST(request: Request) {
-  if (!isConfigured()) {
-    return NextResponse.json({ error: 'server_processing_disabled' }, { status: 503 });
-  }
+/** Sharper model, used only when a key is present. */
+async function viaFal(bytes: Uint8Array, type: string) {
+  fal.config({ credentials: process.env.FAL_KEY });
 
+  const uploaded = await fal.storage.upload(new File([bytes as BlobPart], 'input', { type }));
+  const { data } = await fal.subscribe('fal-ai/birefnet/v2', {
+    input: {
+      image_url: uploaded,
+      model: 'General Use (Heavy)',
+      operating_resolution: '2048x2048',
+      refine_foreground: true,
+      output_format: 'png',
+    },
+  });
+
+  const url = (data as { image?: { url?: string } }).image?.url;
+  if (!url) throw new Error('no image in fal response');
+
+  const result = await fetch(url);
+  if (!result.ok) throw new Error(`result fetch failed: ${result.status}`);
+
+  return Buffer.from(await result.arrayBuffer());
+}
+
+export async function POST(request: Request) {
   const ip = clientKey(request);
 
   let form: FormData;
@@ -61,29 +83,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    fal.config({ credentials: process.env.FAL_KEY });
+    const png = falConfigured()
+      ? await viaFal(bytes, type)
+      : await cutout(Buffer.from(bytes));
 
-    const uploaded = await fal.storage.upload(new File([bytes as BlobPart], 'input', { type }));
-
-    const { data } = await fal.subscribe('fal-ai/birefnet/v2', {
-      input: {
-        image_url: uploaded,
-        model: 'General Use (Heavy)',
-        operating_resolution: '2048x2048',
-        refine_foreground: true,
-        output_format: 'png',
-      },
-    });
-
-    const url = (data as { image?: { url?: string } }).image?.url;
-    if (!url) throw new Error('no image in fal response');
-
-    const result = await fetch(url);
-    if (!result.ok) throw new Error(`result fetch failed: ${result.status}`);
-
-    return new NextResponse(await result.arrayBuffer(), {
+    return new NextResponse(png as unknown as BodyInit, {
       headers: {
         'content-type': 'image/png',
+        // The upload is processed and dropped; nothing about it is stored.
         'cache-control': 'no-store',
         'x-remaining-quota': String(remaining),
       },

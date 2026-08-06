@@ -13,17 +13,12 @@ export type Progress = {
   ratio: number | null;
 };
 
-export type ProcessingMode = 'auto' | 'local' | 'server';
-export type ProcessedBy = 'local' | 'server';
 
 export type ErrorCode =
   | 'tooLarge'
   | 'tooManyPixels'
   | 'badFormat'
   | 'corrupt'
-  | 'noEngine'
-  | 'engineFailed'
-  | 'networkModel'
   | 'serverFailed'
   | 'rateLimited'
   | 'unknown';
@@ -50,17 +45,5 @@ export type Cutout = {
   mask: ImageBitmap;
   width: number;
   height: number;
-  processedBy: ProcessedBy;
 };
 
-export type WorkerRequest =
-  | { type: 'warmup' }
-  | { type: 'run'; id: number; bitmap: ImageBitmap };
-
-export type WorkerResponse =
-  | { type: 'progress'; phase: EnginePhase; ratio: number | null }
-  | { type: 'ready' }
-  /** Which execution provider actually built, so slow CPU runs can be flagged. */
-  | { type: 'engine'; provider: 'webgpu' | 'wasm' }
-  | { type: 'result'; id: number; mask: ImageBitmap }
-  | { type: 'error'; id?: number; code: ErrorCode; message: string };

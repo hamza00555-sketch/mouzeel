@@ -1,11 +1,12 @@
 /*
- * End-to-end check for the editor pipeline.
+ * End-to-end check for the whole pipeline, inference included.
  *
- * Inference itself needs WebGPU, which headless Chromium does not provide, so
- * the run stubs /api/remove-background with a known matte and exercises
- * everything downstream: matte extraction, refinement, brush edits, undo,
- * compositing and export. Fixtures are generated in-browser so the repo carries
- * no binary test assets.
+ * Earlier revisions ran the model in the browser on WebGPU, which headless
+ * Chromium does not provide — so the suite stubbed /api/remove-background and
+ * never once exercised the part that kept breaking in production. Segmentation
+ * now runs on the server, so nothing is mocked here: the request that leaves
+ * the page is the request users make. Fixtures are generated in-browser so the
+ * repo carries no binary test assets.
  *
  *   npm run dev          # in another shell
  *   node tests/e2e.mjs
@@ -67,19 +68,8 @@ const fixtures = await page.evaluate(async () => {
       reader.readAsDataURL(blob);
     });
 
-  return {
-    source: await toBase64(await draw(false)),
-    cutout: await toBase64(await draw(true)),
-  };
+  return { source: await toBase64(await draw(false)) };
 });
-
-const cutoutBytes = Buffer.from(fixtures.cutout, 'base64');
-
-await page.route('**/api/remove-background', (route) =>
-  route.request().method() === 'GET'
-    ? route.fulfill({ json: { available: true, hourlyLimit: 10, turnstile: false } })
-    : route.fulfill({ contentType: 'image/png', body: cutoutBytes }),
-);
 
 const shot = (name) => page.screenshot({ path: `${OUT}/${name}.png` });
 
@@ -102,7 +92,7 @@ await page.setInputFiles('input[type=file]', {
   mimeType: 'image/png',
   buffer: Buffer.from(fixtures.source, 'base64'),
 });
-await page.waitForSelector('[role=tablist]', { timeout: 30_000 });
+await page.waitForSelector('[role=tablist]', { timeout: 90_000 });
 check('editor opens after processing', true);
 check('hero is hidden in the editor', (await page.locator('h1').count()) === 0);
 await page.waitForTimeout(500);
@@ -166,25 +156,22 @@ await page.waitForTimeout(300);
 check('undo empties the history', !(await undoButton.isEnabled()));
 await shot('04-editor-after-undo');
 
-// ── graceful failure when neither engine is available ──────────────────────
-await page.unroute('**/api/remove-background');
-await page.route('**/api/remove-background', (route) => route.fulfill({ json: { available: false } }));
+// ── an unusable upload is rejected with an explanation ────────────────────
 await page.goto(`${BASE}/ar`, { waitUntil: 'networkidle' });
 await page.setInputFiles('input[type=file]', {
-  name: 'fixture.png',
+  name: 'not-an-image.png',
   mimeType: 'image/png',
-  buffer: Buffer.from(fixtures.source, 'base64'),
+  buffer: Buffer.from('this is not a PNG'),
 });
-// `.first()` keeps this strict-mode-safe, and the visibility is read from the
-// same locator we waited on rather than a second, racier query.
+
 const alert = page.locator('[role=alert]').first();
 const shown = await alert
-  .waitFor({ state: 'visible', timeout: 15_000 })
+  .waitFor({ state: 'visible', timeout: 30_000 })
   .then(() => true)
   .catch(() => false);
-check('shows an explanation when no engine can run', shown,
+check('a corrupt upload is explained, not swallowed', shown,
   shown ? (await alert.innerText()).slice(0, 40) : 'never appeared');
-await shot('05-no-engine');
+await shot('05-bad-upload');
 
 check('no console errors', consoleErrors.length === 0, consoleErrors[0] ?? '');
 

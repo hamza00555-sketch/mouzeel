@@ -1,128 +1,45 @@
 /*
- * Offline support for Muzeel.
+ * Tombstone.
  *
- * The 114 MB model is cached separately by the inference worker (Cache API,
- * `muzeel-model-v1`); this only has to keep the app shell and the ONNX Runtime
- * binaries available so the whole tool still opens with no connection.
+ * Muzeel used to ship an offline service worker that cached app code
+ * cache-first and never bumped its cache version. Browsers that visited during
+ * that period pinned whatever build they saw first and stopped asking the
+ * server — three separate deploys never reached them, because the bug had
+ * disabled its own delivery channel.
  *
- * ── Why the strategy is split ────────────────────────────────────────────────
- * v1 served everything cache-first, including /_next/static/. Cache-first is
- * only sound when a URL can never change meaning — and a chunk filename is not
- * that guarantee. The result was a browser that pinned the app code it happened
- * to see first and never asked again, so a shipped fix could not reach it. The
- * cache version had also never moved, so `activate` never evicted anything.
+ * Deleting this file would NOT have fixed that: an installed worker keeps
+ * running and keeps serving its cache regardless of whether the file still
+ * exists. The only way out is to ship a worker whose job is to remove itself.
  *
- * Rules now:
- *   - Cache-first only for /ort/<version>/, whose URL carries the ORT version
- *     and is therefore content-addressed by construction. Revalidating 23 MB on
- *     every load would be pure waste.
- *   - Stale-while-revalidate for app code, fonts and images: answer from cache
- *     instantly, always refetch in the background. A stale copy can survive one
- *     load instead of forever.
+ * So this one intercepts nothing, deletes every cache the old versions created,
+ * unregisters itself, and asks open pages to reload once onto the real network.
+ * After that the site has no service worker at all — inference happens on the
+ * server now, so there is nothing left worth caching offline.
  *
- * Bumping VERSION is what rescues browsers already holding a poisoned entry:
- * `activate` deletes every muzeel-* cache that is not current.
+ * Do not "restore" caching here. If offline support is ever wanted again it
+ * needs versioned cache names and a revalidating strategy, not this file.
  */
-const VERSION = 'v2';
-const SHELL = `muzeel-shell-${VERSION}`;
-const ASSETS = `muzeel-assets-${VERSION}`;
 
-const SHELL_URLS = ['/ar', '/en'];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(SHELL)
-      // Best-effort: a failed precache must not block activation.
-      .then((cache) => cache.addAll(SHELL_URLS).catch(() => {}))
-      .then(() => self.skipWaiting()),
-  );
+self.addEventListener('install', () => {
+  // Take over immediately rather than waiting for every old tab to close.
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key.startsWith('muzeel-') && key !== SHELL && key !== ASSETS)
-            // Leave the model cache alone — re-downloading it would be brutal.
-            .filter((key) => !key.startsWith('muzeel-model-'))
-            .map((key) => caches.delete(key)),
-        ),
-      )
-      .then(() => self.clients.claim())
-      // Tell open pages a new worker is in charge; they decide whether it is
-      // safe to reload (see src/components/ServiceWorker.tsx).
-      .then(() => self.clients.matchAll({ type: 'window' }))
-      .then((clients) => {
-        for (const client of clients) client.postMessage({ type: 'muzeel:activated', version: VERSION });
-      }),
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((key) => key.startsWith('muzeel-')).map((key) => caches.delete(key)));
+
+      // Stop controlling any page, now and for future loads.
+      await self.registration.unregister();
+
+      // Pages loaded under the old worker are still running its cached code, so
+      // they need one reload to reach the current build.
+      const clients = await self.clients.matchAll({ type: 'window' });
+      for (const client of clients) client.navigate(client.url).catch(() => {});
+    })(),
   );
 });
 
-/** Version-stamped ORT binaries: the URL itself pins the bytes. */
-function isImmutableAsset(url) {
-  return /^\/ort\/\d+\.\d+\.\d+\//.test(url.pathname);
-}
-
-/** App code and static media: cacheable, but must never be pinned. */
-function isRevalidatedAsset(url) {
-  return (
-    url.pathname.startsWith('/_next/static/') ||
-    /\.(?:woff2?|png|svg|webp|ico)$/.test(url.pathname)
-  );
-}
-
-function putInCache(request, response) {
-  if (!response.ok) return response;
-  const copy = response.clone();
-  void caches.open(ASSETS).then((cache) => cache.put(request, copy));
-  return response;
-}
-
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  if (request.method !== 'GET') return;
-
-  const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
-  // Never cache the processing endpoint: it is one-shot and user-specific.
-  if (url.pathname.startsWith('/api/')) return;
-
-  if (isImmutableAsset(url)) {
-    event.respondWith(
-      caches.match(request).then((hit) => hit ?? fetch(request).then((r) => putInCache(request, r))),
-    );
-    return;
-  }
-
-  if (isRevalidatedAsset(url)) {
-    event.respondWith(
-      caches.match(request).then((hit) => {
-        // Kicked off whether or not there was a hit, so the entry is always
-        // refreshed — this is the line whose absence pinned stale app code.
-        const fresh = fetch(request)
-          .then((response) => putInCache(request, response))
-          .catch(() => hit);
-
-        return hit ?? fresh;
-      }),
-    );
-    return;
-  }
-
-  if (request.mode === 'navigate') {
-    // Network-first so deploys land immediately; the cache is the offline net.
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          void caches.open(SHELL).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => caches.match(request).then((hit) => hit ?? caches.match('/ar'))),
-    );
-  }
-});
+// No fetch handler on purpose: every request goes straight to the network.

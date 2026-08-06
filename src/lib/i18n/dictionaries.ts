@@ -27,7 +27,7 @@ const ar = {
     titleAccent: 'اسحب لتزيلها',
     subtitle: 'دقة كاملة · بلا علامة مائية · بلا تسجيل دخول',
     revealHint: 'اسحب لكشف الصورة قبل وبعد إزالة الخلفية',
-    revealCaption: 'صورة حقيقية، قُصّت بنفس المحرك الذي يعمل داخل متصفحك.',
+    revealCaption: 'صورة حقيقية، قُصّت بنفس المحرك الذي يعالج صورتك.',
   },
   samples: {
     title: 'أو جرّب على واحدة من هذي:',
@@ -36,12 +36,12 @@ const ar = {
     fur: 'فرو ناعم',
   },
   showcase: {
-    privacyTitle: 'لا تغادر جهازك',
+    privacyTitle: 'تُحذف فور معالجتها',
     privacyBody:
-      'المعالجة تتم داخل المتصفح نفسه. لا رفع، لا تخزين، ولا خادم يرى صورتك — حتى لو قطعت الإنترنت.',
+      'صورتك تُعالَج ثم تُحذف مباشرة. لا تُخزَّن، ولا تُستخدم في تدريب أي نموذج، ولا تحتاج حساباً لترفعها.',
     precisionTitle: 'خصلة خصلة',
     precisionBody:
-      'نموذج BiRefNet مفتوح المصدر يفصل أدق التفاصيل: الشعر المتطاير، الفرو، وحواف الزجاج.',
+      'نموذج U²-Net مفتوح المصدر يفصل العنصر عن خلفيته في ثانية واحدة، مهما كانت الخلفية مزدحمة.',
     controlTitle: 'وإن أخطأ، صحّحه بيدك',
     controlBody:
       'فرشاة استرجاع ومسح، وضبط للحواف، وخلفية بأي لون أو صورة — كلها بالدقة الأصلية.',
@@ -54,17 +54,10 @@ const ar = {
     button: 'اختر صورة',
   },
   engine: {
-    preparing: 'جارٍ تحضير المحرك',
-    preparingHint: 'تنزيل لمرة واحدة — يُحفَظ في متصفحك بعدها',
-    downloading: 'تنزيل المحرك',
-    loading: 'تشغيل المحرك',
     processing: 'جارٍ إزالة الخلفية',
     reading: 'قراءة الصورة',
     refining: 'تحسين الحواف',
     done: 'تم',
-    localBadge: 'معالجة على جهازك',
-    serverBadge: 'معالجة عالية الجودة',
-    localReady: 'المحرك جاهز على جهازك — الصور القادمة تُعالَج محلياً',
   },
   editor: {
     newImage: 'صورة جديدة',
@@ -135,10 +128,6 @@ const ar = {
     tooManyPixels: 'أبعاد الصورة كبيرة جداً (الحد ٣٠ ميجابكسل).',
     badFormat: 'صيغة غير مدعومة. استخدم PNG أو JPG أو WEBP.',
     corrupt: 'تعذّرت قراءة الصورة — قد يكون الملف تالفاً.',
-    noEngine:
-      'متصفحك لا يدعم WebGPU، والمعالجة على الخادم غير متاحة حالياً. جرّب Chrome أو Edge أو Safari بإصدار حديث.',
-    engineFailed: 'تعذّر تشغيل المحرك على جهازك. افتح التفاصيل التقنية أدناه لمعرفة السبب.',
-    networkModel: 'تعذّر تنزيل المحرك. تحقّق من اتصالك وأعد المحاولة.',
     serverFailed: 'تعذّرت المعالجة على الخادم.',
     rateLimited: 'تجاوزت الحد المسموح. حاول مرة أخرى بعد قليل، أو استخدم المعالجة على جهازك.',
     unknown: 'حدث خطأ غير متوقع.',
@@ -147,7 +136,7 @@ const ar = {
     details: 'التفاصيل التقنية',
   },
   footer: {
-    builtWith: 'مبني على نموذج BiRefNet مفتوح المصدر برخصة MIT.',
+    builtWith: 'مبني على نموذج U²-Net مفتوح المصدر برخصة Apache 2.0.',
     privacy: 'لا نجمع صورك ولا نخزّنها.',
   },
 };
@@ -169,7 +158,7 @@ const en: Dictionary = {
     titleAccent: 'Drag to remove it.',
     subtitle: 'Full resolution. No watermark. No sign-up.',
     revealHint: 'Drag to compare before and after background removal',
-    revealCaption: 'A real photo, cut out by the same engine that runs in your browser.',
+    revealCaption: 'A real photo, cut out by the same engine that will process yours.',
   },
   samples: {
     title: 'Or try one of these:',
@@ -178,12 +167,12 @@ const en: Dictionary = {
     fur: 'Soft fur',
   },
   showcase: {
-    privacyTitle: 'It never leaves your device.',
+    privacyTitle: 'Deleted the moment it is processed.',
     privacyBody:
-      'Processing happens inside the browser itself. Nothing is uploaded, nothing is stored, and no server ever sees your image — it even works with the network off.',
+      'Your image is processed and then dropped immediately. Nothing is stored, nothing trains a model, and you never need an account to upload one.',
     precisionTitle: 'Strand by strand.',
     precisionBody:
-      'The open-source BiRefNet model separates the hardest detail there is: flyaway hair, fur, and the edges of glass.',
+      'The open-source U²-Net model separates subject from background in about a second, however busy the scene.',
     controlTitle: 'And when it slips, you fix it.',
     controlBody:
       'Restore and erase brushes, edge tuning, and any colour or image behind the subject — all at the original resolution.',
@@ -196,17 +185,10 @@ const en: Dictionary = {
     button: 'Choose an image',
   },
   engine: {
-    preparing: 'Preparing the engine',
-    preparingHint: 'One-time download — cached in your browser afterwards',
-    downloading: 'Downloading engine',
-    loading: 'Starting engine',
     processing: 'Removing background',
     reading: 'Reading image',
     refining: 'Refining edges',
     done: 'Done',
-    localBadge: 'Processed on your device',
-    serverBadge: 'High-quality processing',
-    localReady: 'Engine ready on your device — next images are processed locally',
   },
   editor: {
     newImage: 'New image',
@@ -277,10 +259,6 @@ const en: Dictionary = {
     tooManyPixels: 'The image is too large (30 megapixel limit).',
     badFormat: 'Unsupported format. Use PNG, JPG or WEBP.',
     corrupt: 'Could not read the image — the file may be corrupt.',
-    noEngine:
-      'Your browser does not support WebGPU and server processing is unavailable. Try a recent Chrome, Edge or Safari.',
-    engineFailed: 'The engine could not start on your device. Open the technical details below for the reason.',
-    networkModel: 'Could not download the engine. Check your connection and try again.',
     serverFailed: 'Server processing failed.',
     rateLimited: 'You have hit the limit. Try again shortly, or switch to on-device processing.',
     unknown: 'Something went wrong.',
@@ -289,7 +267,7 @@ const en: Dictionary = {
     details: 'Technical details',
   },
   footer: {
-    builtWith: 'Built on the open-source BiRefNet model, MIT licensed.',
+    builtWith: 'Built on the open-source U²-Net model, Apache 2.0 licensed.',
     privacy: 'We never collect or store your images.',
   },
 };

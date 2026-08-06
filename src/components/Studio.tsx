@@ -1,16 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Dropzone } from '@/components/Dropzone';
 import { Editor } from '@/components/editor/Editor';
 import { HeroReveal } from '@/components/marketing/HeroReveal';
 import { Reveal } from '@/components/marketing/Reveal';
-import { isModelCached, supportsWebGPU } from '@/lib/bg/local-engine';
-import { removeBackground, warmLocalEngine } from '@/lib/bg/remove';
+import { removeBackground } from '@/lib/bg/remove';
 import { MuzeelError } from '@/lib/bg/types';
 import type { Cutout, ErrorCode, Progress } from '@/lib/bg/types';
-import { setBusy } from '@/lib/editor-activity';
 import type { Dictionary } from '@/lib/i18n/dictionaries';
 import { fetchSampleAsFile, samples } from '@/lib/samples';
 
@@ -23,24 +21,10 @@ type State =
 export function Studio({ dict }: { dict: Dictionary }) {
   const [state, setState] = useState<State>({ status: 'idle' });
   const [fileName, setFileName] = useState('image');
-  const [localReady, setLocalReady] = useState(false);
-  const [warmup, setWarmup] = useState<Progress | null>(null);
   const [lastFile, setLastFile] = useState<File | null>(null);
   /** Bumped per processed image so the editor remounts with fresh view state. */
   const [imageKey, setImageKey] = useState(0);
 
-  useEffect(() => {
-    void isModelCached().then(setLocalReady);
-  }, []);
-
-  // Lets the service-worker hook know there is work in flight, so it won't
-  // reload the page out from under it when a new worker takes over. Everything
-  // but the empty dropzone counts — a reload during `working` throws away an
-  // upload the user is waiting on.
-  useEffect(() => {
-    setBusy(state.status !== 'idle');
-    return () => setBusy(false);
-  }, [state.status]);
 
   const process = useCallback(async (file: File) => {
     setLastFile(file);
@@ -67,33 +51,6 @@ export function Studio({ dict }: { dict: Dictionary }) {
     }
   }, []);
 
-  /**
-   * Warm the on-device engine once the user is looking at a result rather than a
-   * spinner. The 114 MB download then lands invisibly, and every later image is
-   * processed locally.
-   */
-  useEffect(() => {
-    if (state.status !== 'ready' || localReady) return;
-
-    let cancelled = false;
-
-    void supportsWebGPU().then((ok) => {
-      if (!ok || cancelled) return;
-
-      return warmLocalEngine((progress) => {
-        if (!cancelled && progress.phase === 'downloading') setWarmup(progress);
-      }).then((warmed) => {
-        if (cancelled) return;
-        setWarmup(null);
-        setLocalReady(warmed);
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [state.status, localReady]);
-
   const reset = useCallback(() => {
     if (state.status === 'ready') {
       state.cutout.source.close();
@@ -103,29 +60,8 @@ export function Studio({ dict }: { dict: Dictionary }) {
   }, [state]);
 
   if (state.status === 'ready') {
-    const local = state.cutout.processedBy === 'local';
-
     return (
       <main className="mx-auto flex min-h-0 w-full max-w-[1700px] flex-1 flex-col gap-3 px-4 py-4">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1 text-[13px]">
-          <span className="flex items-center gap-1.5 text-chalk-soft">
-            <span
-              className={`size-1.5 rounded-full ${local ? 'bg-emerald-400' : 'bg-azure'}`}
-              aria-hidden
-            />
-            {local ? dict.engine.localBadge : dict.engine.serverBadge}
-          </span>
-
-          {warmup ? (
-            <span className="text-chalk-soft/70">
-              {dict.engine.downloading} · {Math.round((warmup.ratio ?? 0) * 100)}%
-            </span>
-          ) : null}
-
-          {localReady && !local && !warmup ? (
-            <span className="text-chalk-soft/70">{dict.engine.localReady}</span>
-          ) : null}
-        </div>
 
         <Editor
           key={imageKey}
@@ -329,15 +265,11 @@ function Showcase({ dict }: { dict: Dictionary }) {
 
 function Working({ dict, progress }: { dict: Dictionary; progress: Progress }) {
   const label =
-    progress.phase === 'downloading'
-      ? dict.engine.downloading
-      : progress.phase === 'loading'
-        ? dict.engine.loading
-        : progress.phase === 'reading'
-          ? dict.engine.reading
-          : progress.phase === 'refining'
-            ? dict.engine.refining
-            : dict.engine.processing;
+    progress.phase === 'reading'
+      ? dict.engine.reading
+      : progress.phase === 'refining'
+        ? dict.engine.refining
+        : dict.engine.processing;
 
   const ratio = progress.ratio;
 
@@ -361,9 +293,6 @@ function Working({ dict, progress }: { dict: Dictionary; progress: Progress }) {
         />
       </div>
 
-      {progress.phase === 'downloading' ? (
-        <p className="mt-4 text-[13px] leading-relaxed text-ink-soft">{dict.engine.preparingHint}</p>
-      ) : null}
     </div>
   );
 }
